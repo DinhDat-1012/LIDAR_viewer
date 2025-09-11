@@ -1,12 +1,12 @@
 #include "main.h"
-#include "iostream.h"
-#include "string.h"
-#include "stdio.h"
+#include "main.h"
+#include "iostream"
 #include "stdlib.h"
 
 using namespace std;
 
-public void main() {
+int main() {
 std::cout<<"Hello World!"<<endl;
 
+ return 0;
 }
