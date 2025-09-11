@@ -7,4 +7,8 @@ include_directories(.)
 
 add_executable(LIDAR_viewer
         main.cpp
-        main.h)
+        main.h
+        include/Lidar2DViewer.cpp
+        include/Lidar2DViewer.h
+        include/PCAP_capture.cpp
+        include/PcapLib/PCAP_capture.h)
