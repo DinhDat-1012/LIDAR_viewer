@@ -1,5 +1,6 @@
+#pragma once
 //
-// Created by DatD on 9/11/2025.
+// Created by DatD on 9
 //
 #ifndef MAIN_H
 #define MAIN_H

@@ -11,4 +11,5 @@ add_executable(LIDAR_viewer
         include/Lidar2DViewer.cpp
         include/Lidar2DViewer.h
         include/PCAP_capture.cpp
-        include/PcapLib/PCAP_capture.h)
+        include/PcapLib/PCAP_capture.h
+        include/PcapLib/PCAP_parse.h)
