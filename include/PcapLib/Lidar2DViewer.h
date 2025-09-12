@@ -61,15 +61,6 @@ struct LIDAR_FRAME2D {
     uint64_t timestamp;
     std::vector<Lidar_point_2D> points;
 };
-class PCAP_capture {
-    private:
-    pcap_t *pcap;
-    char error_buffer[PCAP_ERRBUF_SIZE];
-    bool isOpen;
-    public:
-    PCAP_capture();
-    ~PCAP_capture();
-};
 
 
 #endif //LIDAR_VIEWER_LIDAR2DVIEWER_H
