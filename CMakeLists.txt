@@ -13,6 +13,7 @@ include_directories(
 
 add_executable(LIDAR_viewer
         main.cpp
+        LIDAR2DViewer.cpp
 )
 
 target_link_libraries(LIDAR_viewer

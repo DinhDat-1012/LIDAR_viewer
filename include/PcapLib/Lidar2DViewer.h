@@ -1,66 +1,50 @@
-#pragma once
-//
-// Created by ctf on 9/11/25.
-//
-// this header define the way to display pcap stream to screen using openCV library.
-// created by Datdd9 in 11092025 for adas lv project
-// if you have any confuse of this one you can contact me at dinhdat1012vn@gmail.com
-#ifndef LIDAR_VIEWER_LIDAR2DVIEWER_H
-#define LIDAR_VIEWER_LIDAR2DVIEWER_H
+#ifndef LIDAR2DVIEWER_H
+#define LIDAR2DVIEWER_H
 
-#include "vector"
-#include "string"
-#include "iostream"
-#include "pcap.h"
+#include <opencv2/opencv.hpp>
+#include <vector>
+#include <string>
 
-#define SNAP_LEN 65535
-#define PROMISC 1
-#define NONE_PROMISC 0
-#define TIME_OUT_MS 10000
+class Lidar2DViewer {
+public:
+    /**
+     * Constructor: Tạo cửa sổ GUI với kích thước mặc định.
+     * @param width Chiều rộng cửa sổ (mặc định 800).
+     * @param height Chiều cao cửa sổ (mặc định 600).
+     */
+    Lidar2DViewer(int width = 800, int height = 600);
 
-#define UINT uint32_t
-struct Pcap_packet {
-    //uint => uint32_t
-    UINT second;
-    UINT microseconds;
-    UINT capture_length;
-    UINT len;
-    const u_char *pcap_packet_data;
-};
-//=============
-//a point data struct
-//=============
-struct Lidar_point_3D{
-    float x;
-    float y;
-    float z;
-    float intensity;
-    Lidar_point_3D(float _x = 0, float _y = 0, float _z = 0, float _intensity =0) {
-        this->x = _x;
-        this->y = _y;
-        this->z = _z;
-        this->intensity = _intensity;
-    }
-};
-struct Lidar_point_2D {
-    float x;
-    float y;
-    Lidar_point_2D(float _x = 0, float _y = 0) {
-        this->x = _x;
-        this->y = _y;
-    }
-};
-//====================
-//a frame LIDAR
-//====================
-struct LIDAR_FRAME {
-    uint64_t timestamp;
-    std::vector<Lidar_point_3D> points;
-};
-struct LIDAR_FRAME2D {
-    uint64_t timestamp;
-    std::vector<Lidar_point_2D> points;
+    /**
+     * Destructor: Đóng cửa sổ tự động.
+     */
+    ~Lidar2DViewer();
+
+    /**
+     * Cập nhật dữ liệu LIDAR: Vẽ các điểm lên canvas.
+     * @param lidarPoints Vector các điểm 2D (cv::Point2f: x, y).
+     * @param pointColor Màu điểm (mặc định xanh lá, cv::Scalar(0, 255, 0)).
+     * @param pointSize Kích thước điểm (mặc định 2 pixel).
+     */
+    void update(const std::vector<cv::Point2f>& lidarPoints,
+                const cv::Scalar& pointColor = cv::Scalar(0, 255, 0),
+                int pointSize = 2);
+
+    /**
+     * Hiển thị cửa sổ GUI.
+     */
+    void show();
+
+    /**
+     * Đóng cửa sổ và giải phóng tài nguyên.
+     */
+    void close();
+
+private:
+    cv::Mat canvas;                     // Canvas để vẽ (ảnh nền đen).
+    int windowWidth;                    // Chiều rộng cửa sổ.
+    int windowHeight;                   // Chiều cao cửa sổ.
+    std::string windowName;             // Tên cửa sổ.
+    bool isWindowCreated;               // Flag kiểm tra cửa sổ đã tạo chưa.
 };
 
-
-#endif //LIDAR_VIEWER_LIDAR2DVIEWER_H
+#endif // LIDAR2DViewer_H
