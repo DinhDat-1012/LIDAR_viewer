@@ -48,8 +48,9 @@ int main(int argc, char** argv) {
         } else {
             std::cerr << "No points in packet #" << i << std::endl;
         }
-
-        viewer.clear_all_pixel();
+        if (i%360==0) {
+            viewer.clear_all_pixel();
+        }
     }
 
     capture.close_device();

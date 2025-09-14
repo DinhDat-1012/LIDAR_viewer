@@ -1,25 +1,30 @@
 #include "include/PcapLib/Lidar2DViewer.h"
 
-Lidar2DViewer::Lidar2DViewer(int width, int height) : windowWidth(width), windowHeight(height),
-                                                      windowName("LIDAR 2D Viewer"), isWindowCreated(false) {
-    canvas = cv::Mat::zeros(height, width, CV_8UC3);  // Canvas đen 3 kênh (BGR).
-    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);  // Tạo cửa sổ.
-    isWindowCreated = true;
+Lidar2DViewer::Lidar2DViewer(int width, int height)
+    : windowWidth(width), windowHeight(height),
+      windowName("LIDAR 2D Viewer"), isWindowCreated(true),
+      canvas(cv::Mat::zeros(height, width, CV_8UC3))  // Khởi tạo luôn
+{
+    cv::namedWindow(windowName, cv::WINDOW_AUTOSIZE);
 }
 
 Lidar2DViewer::~Lidar2DViewer() {
     close();
 }
 
-void Lidar2DViewer::update(const std::vector<cv::Point2f>& lidarPoints, const cv::Scalar& pointColor, int pointSize) {
-     //canvas = cv::Scalar(0, 0, 0);  // Xóa canvas về đen.
+void Lidar2DViewer::update(const std::vector<cv::Point2f>& lidarPoints,
+                           const cv::Scalar& pointColor,
+                           int pointSize)
+{
+    if (lidarPoints.empty()) return;
+
+    int radius = std::max(1, pointSize / 2);
     for (const auto& point : lidarPoints) {
-        cv::circle(canvas, point, pointSize/2, pointColor, -1);  // Vẽ điểm đầy.
+        cv::circle(canvas, point, radius, pointColor, cv::FILLED);
     }
 }
-void Lidar2DViewer::clear_all_pixel() {
-    canvas = cv::Scalar(0, 0, 0);
-}
+
+
 
 void Lidar2DViewer::show() {
     if (isWindowCreated) {

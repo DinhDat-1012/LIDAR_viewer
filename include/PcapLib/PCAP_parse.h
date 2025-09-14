@@ -1,12 +1,15 @@
 #ifndef PCAP_PARSE_H
 #define PCAP_PARSE_H
+//======================================================================================================================
+//Created by datdd9
+//======================================================================================================================
 
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <cstring>
 #include <iostream>
-#include "PCAP_capture.h"   // dùng PCAP_Packet struct
+#include "PCAP_capture.h"
 
 struct PointXYZI {
     float x;
@@ -23,7 +26,7 @@ public:
     }
 
     // --- trong parse_packet ---
-std::vector<PointXYZI> parse_packet(const PCAP_Packet &packet) {
+inline std::vector<PointXYZI> parse_packet(const PCAP_Packet &packet) {
     std::vector<PointXYZI> cloud;
 
     if (packet.packet_data.empty()) return cloud;

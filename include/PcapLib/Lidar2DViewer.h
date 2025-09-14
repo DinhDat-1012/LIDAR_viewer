@@ -39,9 +39,11 @@ public:
      */
     void close();
     /**
-     * Ham thu hien xoa toan bo cac diem anh
+     * Ham thuc hien xoa toan bo cac diem anh
      */
-    void clear_all_pixel();
+    inline void clear_all_pixel() {
+        canvas.setTo(cv::Scalar(0, 0, 0));
+    };
 private:
     cv::Mat canvas;                     // Canvas để vẽ (ảnh nền đen).
     int windowWidth;                    // Chiều rộng cửa sổ.

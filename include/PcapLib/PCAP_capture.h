@@ -11,9 +11,9 @@
 #include <iostream>
 #include <cstdint>
 #include <cstring>
-#include <exception>
+#include <stdexcept>
 
-#define SNAP_LEN     65535      // chuẩn max snaplen
+#define SNAP_LEN     65535
 #define PROMISC      1
 #define NON_PROMISC  0
 #define TIMEOUT_MS   1000
@@ -34,14 +34,12 @@ struct PCAP_Packet {
 //================ CLASS ========================
 class PCAP_capture {
 private:
-    pcap_t* handle;
-    char error_buffer[PCAP_ERRBUF_SIZE];
-    bool isOpen;
+    pcap_t* handle {nullptr};
+    char error_buffer[PCAP_ERRBUF_SIZE] = {};
+    bool isOpen {false};
 
 public:
-    PCAP_capture() : handle(nullptr), isOpen(false) {
-        memset(&error_buffer, 0, sizeof(error_buffer));
-    }
+    PCAP_capture() = default;
 
     ~PCAP_capture() {
         close_device();
@@ -53,11 +51,10 @@ public:
     bool open_device(const std::string& device,
                      int snaplen = SNAP_LEN,
                      int promisc = PROMISC,
-                     int timeout_ms = TIMEOUT_MS) {
-
+                     int timeout_ms = TIMEOUT_MS)
+    {
         handle = pcap_open_live(device.c_str(), snaplen, promisc, timeout_ms, error_buffer);
-
-        if (handle == nullptr) {
+        if (!handle) {
             std::cerr << "Error when opening device: " << error_buffer << std::endl;
             return false;
         }
@@ -68,8 +65,8 @@ public:
     // Open file (offline mode)
     bool open_file(const std::string& pcap_file_dir) {
         handle = pcap_open_offline(pcap_file_dir.c_str(), error_buffer);
-        if (handle == nullptr) {
-            std::cerr << "Error when opening file: " << error_buffer << std::endl;
+        if (!handle) {
+            std::cerr << "Error when opening file:- " << error_buffer << std::endl;
             return false;
         }
         isOpen = true;
@@ -78,36 +75,34 @@ public:
 
     // Read one packet
     bool read_packet(PCAP_Packet& packet) {
-        if (!isOpen || handle == nullptr) {
-            return false;
-        }
+        if (!isOpen || !handle) return false;
+
         struct pcap_pkthdr* header;
         const u_char* data;
 
         int response = pcap_next_ex(handle, &header, &data);
-
-        if (response == -1) {
-            std::cerr << "Error when reading packet: " << pcap_geterr(handle) << std::endl;
+        if (response <= 0) {
+            if (response == -1)
+                std::cerr << "Error when reading packet: " << pcap_geterr(handle) << std::endl;
             return false;
-        } else if (response == 0 || response == -2) {
-            return false; // timeout hoặc EOF
         }
 
-        packet.packet_header.timestamp_second      = header->ts.tv_sec;
-        packet.packet_header.timestamp_microsecond = header->ts.tv_usec;
-        packet.packet_header.capture_length        = header->caplen;
-        packet.packet_header.length                = header->len;
+        packet.packet_header = {
+            static_cast<uint32_t>(header->ts.tv_sec),
+            static_cast<uint32_t>(header->ts.tv_usec),
+            header->caplen,
+            header->len
+        };
         packet.packet_data.assign(data, data + header->caplen);
 
         return true;
     }
 
     // Set non-blocking mode
-    bool set_non_blocking(bool non_blocking_enable) {
-        if (!isOpen || handle == nullptr) {
-            return false;
-        }
-        int error = pcap_setnonblock(handle, non_blocking_enable, error_buffer);
+    bool set_non_blocking(bool enable) {
+        if (!isOpen || !handle) return false;
+
+        int error = pcap_setnonblock(handle, enable, error_buffer);
         if (error < 0) {
             std::cerr << "Error when setting non-blocking: " << error_buffer << std::endl;
             return false;
@@ -115,11 +110,10 @@ public:
         return true;
     }
 
-    // Apply a BPF filter (ví dụ: "udp port 2368" cho Hesai Pandar128)
+    // Apply a BPF filter
     bool apply_filter(const std::string& filter_exp) {
-        if (!isOpen || handle == nullptr) {
-            return false;
-        }
+        if (!isOpen || !handle) return false;
+
         struct bpf_program fp;
         if (pcap_compile(handle, &fp, filter_exp.c_str(), 1, PCAP_NETMASK_UNKNOWN) == -1) {
             std::cerr << "Error when compiling filter: " << pcap_geterr(handle) << std::endl;
@@ -135,9 +129,9 @@ public:
         return true;
     }
 
-    // Capture live packets continuously (for Hesai Pandar128)
+    // Capture live packets continuously
     void capture_live(int max_packets = 0) {
-        if (!isOpen || handle == nullptr) {
+        if (!isOpen || !handle) {
             std::cerr << "Device is not open!" << std::endl;
             return;
         }
@@ -150,75 +144,48 @@ public:
             int res = pcap_next_ex(handle, &header, &data);
             if (res == 1) {
                 packet_count++;
-                // In 16 byte đầu để debug
                 for (int i = 0; i < std::min(16, (int)header->caplen); i++) {
                     printf("%02X ", data[i]);
                 }
                 printf("\n");
 
                 if (max_packets > 0 && packet_count >= max_packets) break;
-
-            } else if (res == 0) {
+            }
+            else if (res == 0) {
                 continue; // timeout
-            } else if (res == -1) {
-                std::cerr << "Error when reading packet: " << pcap_geterr(handle) << std::endl;
-                break;
-            } else if (res == -2) {
-                std::cout << "[OK] End of capture" << std::endl;
-                break;
+            }
+            else {
+                if (res == -1) {
+                    std::cerr << "Error when reading packet: " << pcap_geterr(handle) << std::endl;
+                    continue;
+                }else if (res == -2)
+                    std::cout << "[OK] End of capture" << std::endl;
+
             }
         }
     }
 
     // Close
     void close_device() {
-        if (isOpen && handle != nullptr) {
+        if (isOpen && handle) {
             pcap_close(handle);
             handle = nullptr;
             isOpen = false;
         }
     }
 
-    bool is_open() const {
+    inline bool is_open() const {
         return isOpen;
     }
 
-    // Đọc toàn bộ packet từ file đã mở và trả về vector
+    // Read all packets from file/device
     std::vector<PCAP_Packet> read_all_packets() {
         std::vector<PCAP_Packet> all_packets;
+        PCAP_Packet pkt;
 
-        if (!isOpen || handle == nullptr) {
-            std::cerr << "Device/file is not open!" << std::endl;
-            return all_packets;
+        while (read_packet(pkt)) {
+            all_packets.push_back(pkt);
         }
-
-        struct pcap_pkthdr* header;
-        const u_char* data;
-
-        while (true) {
-            int res = pcap_next_ex(handle, &header, &data);
-            if (res == 1) {
-                PCAP_Packet pkt;
-                pkt.packet_header.timestamp_second      = header->ts.tv_sec;
-                pkt.packet_header.timestamp_microsecond = header->ts.tv_usec;
-                pkt.packet_header.capture_length        = header->caplen;
-                pkt.packet_header.length                = header->len;
-                pkt.packet_data.assign(data, data + header->caplen);
-
-                all_packets.push_back(std::move(pkt));
-            }
-            else if (res == 0) {
-                continue; // timeout
-            }
-            else if (res == -1) {
-                std::cerr << "Error reading packet: " << pcap_geterr(handle) << std::endl;
-                break;
-            }
-            else if (res == -2) {
-                break; // EOF
-            }
-        }
-
         return all_packets;
     }
 };
