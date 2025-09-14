@@ -38,7 +38,10 @@ public:
      * Đóng cửa sổ và giải phóng tài nguyên.
      */
     void close();
-
+    /**
+     * Ham thu hien xoa toan bo cac diem anh
+     */
+    void clear_all_pixel();
 private:
     cv::Mat canvas;                     // Canvas để vẽ (ảnh nền đen).
     int windowWidth;                    // Chiều rộng cửa sổ.

@@ -13,10 +13,10 @@
 #include <cstring>
 #include <exception>
 
-#define SNAP_LEN     65535
+#define SNAP_LEN     65535      // chuẩn max snaplen
 #define PROMISC      1
 #define NON_PROMISC  0
-#define TIMEOUT_MS   10000
+#define TIMEOUT_MS   1000
 
 //================ STRUCTS ======================
 struct PCAP_Header {
@@ -28,11 +28,7 @@ struct PCAP_Header {
 
 struct PCAP_Packet {
     PCAP_Header packet_header;
-    const u_char* packet_data;
-};
-
-struct Pcap_packet_list {
-    std::vector<PCAP_Packet> packets_list;
+    std::vector<u_char> packet_data;   // copy an toàn dữ liệu
 };
 
 //================ CLASS ========================
@@ -86,26 +82,22 @@ public:
             return false;
         }
         struct pcap_pkthdr* header;
-        const u_char* packet_data;
+        const u_char* data;
 
-        int response = pcap_next_ex(handle, &header, &packet_data);
+        int response = pcap_next_ex(handle, &header, &data);
 
         if (response == -1) {
             std::cerr << "Error when reading packet: " << pcap_geterr(handle) << std::endl;
             return false;
-        } else if (response == 0) {
-            // timeout
-            return false;
-        } else if (response == -2) {
-            // EOF
-            return false;
+        } else if (response == 0 || response == -2) {
+            return false; // timeout hoặc EOF
         }
 
         packet.packet_header.timestamp_second      = header->ts.tv_sec;
         packet.packet_header.timestamp_microsecond = header->ts.tv_usec;
         packet.packet_header.capture_length        = header->caplen;
         packet.packet_header.length                = header->len;
-        packet.packet_data                         = packet_data;
+        packet.packet_data.assign(data, data + header->caplen);
 
         return true;
     }
@@ -158,14 +150,8 @@ public:
             int res = pcap_next_ex(handle, &header, &data);
             if (res == 1) {
                 packet_count++;
-                std::cout << "[Packet " << packet_count << "] "
-                          << "len=" << header->len
-                          << " caplen=" << header->caplen
-                          << " ts=" << header->ts.tv_sec << "." << header->ts.tv_usec
-                          << std::endl;
-
                 // In 16 byte đầu để debug
-                for (int i = 0; i < 16 && i < header->caplen; i++) {
+                for (int i = 0; i < std::min(16, (int)header->caplen); i++) {
                     printf("%02X ", data[i]);
                 }
                 printf("\n");
@@ -173,8 +159,7 @@ public:
                 if (max_packets > 0 && packet_count >= max_packets) break;
 
             } else if (res == 0) {
-                // timeout
-                continue;
+                continue; // timeout
             } else if (res == -1) {
                 std::cerr << "Error when reading packet: " << pcap_geterr(handle) << std::endl;
                 break;
@@ -198,9 +183,43 @@ public:
         return isOpen;
     }
 
-    // Trả về raw handle (nếu cần dùng trực tiếp pcap_* API)
-    pcap_t* get_handle() {
-        return handle;
+    // Đọc toàn bộ packet từ file đã mở và trả về vector
+    std::vector<PCAP_Packet> read_all_packets() {
+        std::vector<PCAP_Packet> all_packets;
+
+        if (!isOpen || handle == nullptr) {
+            std::cerr << "Device/file is not open!" << std::endl;
+            return all_packets;
+        }
+
+        struct pcap_pkthdr* header;
+        const u_char* data;
+
+        while (true) {
+            int res = pcap_next_ex(handle, &header, &data);
+            if (res == 1) {
+                PCAP_Packet pkt;
+                pkt.packet_header.timestamp_second      = header->ts.tv_sec;
+                pkt.packet_header.timestamp_microsecond = header->ts.tv_usec;
+                pkt.packet_header.capture_length        = header->caplen;
+                pkt.packet_header.length                = header->len;
+                pkt.packet_data.assign(data, data + header->caplen);
+
+                all_packets.push_back(std::move(pkt));
+            }
+            else if (res == 0) {
+                continue; // timeout
+            }
+            else if (res == -1) {
+                std::cerr << "Error reading packet: " << pcap_geterr(handle) << std::endl;
+                break;
+            }
+            else if (res == -2) {
+                break; // EOF
+            }
+        }
+
+        return all_packets;
     }
 };
 
