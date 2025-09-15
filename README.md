@@ -11,3 +11,8 @@ Clone this repository:
 #bash
 git clone git@github.com:DinhDat-1012/LIDAR_viewer.git
 ```
+#Require library of this project:
+
+```
+openCV lidar.h
+```
