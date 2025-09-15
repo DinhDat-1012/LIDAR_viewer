@@ -7,7 +7,7 @@ using openCV library to receiver lidar signal and parse to point in 2D viewer...
 
 
 Clone this repository:
-'''
-bash
+```
+#bash
 git clone git@github.com:DinhDat-1012/LIDAR_viewer.git
-'''
+```
